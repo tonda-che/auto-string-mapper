@@ -48,9 +48,7 @@ class AutoStringMapper:
         )
 
         self.distance_matrix = pd.DataFrame(
-            levenshtein_array[:, maxlen_from_column - 1, maxlen_to_column - 1].reshape(
-                [len_to_column, len_from_column]
-            )
+            levenshtein_array[:, maxlen_from_column - 1, maxlen_to_column - 1].reshape([len_to_column, len_from_column])
         )
 
         maxlen_matrix = self.create_maxlen_matrix(unique_from_column, unique_to_column)
@@ -60,7 +58,30 @@ class AutoStringMapper:
         self.similarity_matrix.index = unique_to_column.to_list()
         self.similarity_matrix.columns = unique_from_column.to_list()
 
-    def get_mapping(self, similarity_threshold: float = 0.0) -> dict:
+    @staticmethod
+    def determine_unused_row_name(index: pd.Index) -> str:
+        """
+        Searches and index for a suitable row name for the max column and
+        creates one that is not in the index by appending.
+
+        Args:
+            index (pd.Index): index to be checked for the row name
+
+        Returns:
+            str: a row name that is not in the index
+
+        """
+        row_name = "max"
+        if row_name in index:
+            row_name += "max"
+        return row_name
+
+    def get_mapping(
+        self,
+        similarity_threshold: float = 0.0,
+        relationship_type: str = "1:n",
+        data_type: str = "dict",
+    ) -> dict:
         """
         Function to retrieve a mapping using the similarity matrix
 
@@ -68,26 +89,59 @@ class AutoStringMapper:
             similarity_threshold (float): threshold which decides how
                 similar two strings need to be in order to be included
                 into the mapping and not as np.nan
+            relationship_type (str): determines whether the mapping is a "1:n"
+                or a "1:1" relationship
 
         Returns:
             dict: dictionary with the mapping from the "from" to the "to" column
 
         Raises:
-            ValueError: if similarity_threshold is not between 0 and 1
+            ValueError: if similarity_threshold is not between 0 and 1 or if
+                relationship_type is not "1:1" or "1:n" or if data_type is not
+                "dict", "series" or "frame"
 
         """
         if similarity_threshold < 0.0 or similarity_threshold > 1.0:
             raise ValueError("Parameter similarity_threshold must be between 0 and 1")
 
-        mapping = pd.DataFrame(self.similarity_matrix.idxmax(axis=0))
+        mapping = self.similarity_matrix.idxmax(axis=0)
 
-        similarity_threshold_mask = (
-            self.similarity_matrix.max(axis=0) >= similarity_threshold
-        )
+        if relationship_type == "1:1":
 
-        mapping[0] = mapping[0].where(similarity_threshold_mask, np.nan)
+            max_row_name = determine_unused_row_name(index=self.similarity_matrix.index)
 
-        return mapping.to_dict()[0]
+            self.similarity_matrix.loc[max_row_name] = self.similarity_matrix.max(axis=0)
+
+            self.similarity_matrix.drop([max_row_name], inplace=True)
+
+            self.similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
+
+            duplication_mask = self.similarity_matrix.idxmax(axis=0).duplicated()
+
+        elif relationship_type == "1:n":
+
+            duplication_mask = False
+
+        else:
+
+            raise ValueError("Parameter relationship_type must be " "1:1" " or " "1:n" "")
+
+        similarity_threshold_mask = self.similarity_matrix.max(axis=0) >= similarity_threshold
+
+        net_mask = similarity_threshold_mask | duplication_mask
+
+        mapping = mapping.where(net_mask, np.nan)
+
+        if data_type == "dict":
+            return mapping.to_dict()
+        elif data_type == "series":
+            return mapping
+        elif data_type == "frame":
+            mapping = pd.DataFrame(mapping).reset_index()
+            mapping.columns = ["from", "to"]
+            return mapping
+        else:
+            raise ValueError("Parameter data_type must be " "dict" " or " "series" " or " "frame" "")
 
     @staticmethod
     def clean_column(column, column_name: str) -> pd.Series:
@@ -112,9 +166,7 @@ class AutoStringMapper:
         elif type(column) == pd.Series:
             pass
         else:
-            raise ValueError(
-                f"{column_name} not of type numpy.ndarray, pandas.Series or list"
-            )
+            raise ValueError(f"{column_name} not of type numpy.ndarray, pandas.Series or list")
         return column.astype(str)
 
     @staticmethod
@@ -188,62 +240,44 @@ class AutoStringMapper:
 
                 if from_column_index == 0:
 
-                    insertion = np.array(
-                        [np.iinfo("int16").max] * len_from_column * len_to_column
-                    )
+                    insertion = np.array([np.iinfo("int16").max] * len_from_column * len_to_column)
 
                 else:
 
-                    insertion = levenshtein_array[
-                        :, from_column_index - 1, to_column_index
-                    ] + (~pd.isnull(from_column.str[from_column_index])).astype("int16")
+                    insertion = levenshtein_array[:, from_column_index - 1, to_column_index] + (
+                        ~pd.isnull(from_column.str[from_column_index])
+                    ).astype("int16")
 
                 if to_column_index == 0:
 
-                    deletion = np.array(
-                        [np.iinfo("int16").max] * len_from_column * len_to_column
-                    )
+                    deletion = np.array([np.iinfo("int16").max] * len_from_column * len_to_column)
 
                 else:
 
-                    deletion = levenshtein_array[
-                        :, from_column_index, to_column_index - 1
-                    ] + (~pd.isnull(to_column.str[to_column_index])).astype("int16")
+                    deletion = levenshtein_array[:, from_column_index, to_column_index - 1] + (
+                        ~pd.isnull(to_column.str[to_column_index])
+                    ).astype("int16")
 
                 if from_column_index == 0 or to_column_index == 0:
 
-                    replacement = np.array(
-                        [np.iinfo("int16").max] * len_from_column * len_to_column
-                    )
+                    replacement = np.array([np.iinfo("int16").max] * len_from_column * len_to_column)
 
                     if from_column_index == 0 and to_column_index == 0:
 
-                        comparison = (
-                            from_column.str[from_column_index]
-                            != to_column.str[to_column_index]
-                        )
+                        comparison = from_column.str[from_column_index] != to_column.str[to_column_index]
                         replacement = comparison.astype("int16")
 
                 else:
 
-                    comparison = (
-                        from_column.str[from_column_index]
-                        != to_column.str[to_column_index]
-                    )
-                    replacement = levenshtein_array[
-                        :, from_column_index - 1, to_column_index - 1
-                    ] + comparison.astype("int16")
+                    comparison = from_column.str[from_column_index] != to_column.str[to_column_index]
+                    replacement = levenshtein_array[:, from_column_index - 1, to_column_index - 1] + comparison.astype("int16")
 
-                levenshtein_array[:, from_column_index, to_column_index] = np.array(
-                    [insertion, deletion, replacement]
-                ).min(axis=0)
+                levenshtein_array[:, from_column_index, to_column_index] = np.array([insertion, deletion, replacement]).min(axis=0)
 
         return levenshtein_array
 
     @staticmethod
-    def create_maxlen_matrix(
-        from_column: pd.Series, to_column: pd.Series
-    ) -> pd.DataFrame:
+    def create_maxlen_matrix(from_column: pd.Series, to_column: pd.Series) -> pd.DataFrame:
         """
         Creates a matrix which contains the maximum of the string lengths of all
         from-to-combination pairs
@@ -261,9 +295,7 @@ class AutoStringMapper:
         from_column_len = from_column.shape[0]
         to_column_len = to_column.shape[0]
 
-        divisor_frame_from = pd.concat(
-            [from_column.str.len()] * to_column_len, axis=1
-        ).T
+        divisor_frame_from = pd.concat([from_column.str.len()] * to_column_len, axis=1).T
 
         # get rid of row and column index
         divisor_frame_from = divisor_frame_from.T.reset_index(drop=True).T
@@ -275,11 +307,6 @@ class AutoStringMapper:
         divisor_frame_to = divisor_frame_to.T.reset_index(drop=True).T
         divisor_frame_to.reset_index(drop=True, inplace=True)
 
-        maxlen_matrix = (
-            pd.concat([divisor_frame_from, divisor_frame_to])
-            .groupby(level=0)
-            .max()
-            .astype("float32")
-        )
+        maxlen_matrix = pd.concat([divisor_frame_from, divisor_frame_to]).groupby(level=0).max().astype("float32")
 
         return maxlen_matrix
