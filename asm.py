@@ -92,6 +92,7 @@ class AutoStringMapper:
             relationship_type (str): determines whether the mapping is a "1:n"
                 or a "1:1" relationship
 
+
         Returns:
             dict: dictionary with the mapping from the "from" to the "to" column
 
