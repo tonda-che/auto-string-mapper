@@ -134,13 +134,19 @@ class AutoStringMapper:
         mapping = mapping.where(net_mask, np.nan)
 
         if data_type == "dict":
+
             return mapping.to_dict()
+
         elif data_type == "series":
+
             return mapping
+
         elif data_type == "frame":
+
             mapping = pd.DataFrame(mapping).reset_index()
             mapping.columns = ["from", "to"]
             return mapping
+
         else:
             raise ValueError("Parameter data_type must be " "dict" " or " "series" " or " "frame" "")
 
