@@ -3,12 +3,12 @@ import pandas as pd
 
 
 class AutoStringMapper:
-    def __init__(self, from_column, to_column, ignore_case: bool = True) -> None:
+    def __init__(self, from_column: any, to_column: any, ignore_case: bool = True) -> None:
         """
         Initiates an AutoStringMapper object with two string lists, series or
         np.arrays and creating a similarity matrix based on their string
         representations using the levenshtein distance. Use the get_mapping
-        function of this object to then retrieve a mapping from it
+        function of this object to then retrieve a mapping from it.
 
         Args:
             from_column (list, pandas.Series, np.ndarray): list of entries to
@@ -72,7 +72,7 @@ class AutoStringMapper:
 
         """
         row_name = "max"
-        if row_name in index:
+        while row_name in index:
             row_name += "max"
         return row_name
 
@@ -151,9 +151,9 @@ class AutoStringMapper:
             raise ValueError("Parameter data_type must be " "dict" " or " "series" " or " "frame" "")
 
     @staticmethod
-    def clean_column(column, column_name: str) -> pd.Series:
+    def clean_column(column: any, column_name: str) -> pd.Series:
         """
-        Cleans either of the from / to columns to be a pandas Series of type str
+        Cleans either of the from / to columns to be a pandas Series of type str.
 
         Args:
             column (list, pandas.Series, np.ndarray): column to be cleaned
@@ -181,7 +181,7 @@ class AutoStringMapper:
         """
         Creates all combinations of strings in the from column with all strings
         in the to column returning it as two pandas.Series to be interpreted
-        together
+        together.
 
         Args:
             from_column (pandas.Series): column that is mapped from
@@ -217,7 +217,7 @@ class AutoStringMapper:
     ) -> np.ndarray:
         """
         Creates a levenshtein matrix for alle from-to-string-combinations at the
-        same time in a vectorized fashion
+        same time in a vectorized fashion.
 
         Args:
             from_column (pandas.Series): combinations of the from_column (needs
@@ -287,7 +287,7 @@ class AutoStringMapper:
     def create_maxlen_matrix(from_column: pd.Series, to_column: pd.Series) -> pd.DataFrame:
         """
         Creates a matrix which contains the maximum of the string lengths of all
-        from-to-combination pairs
+        from-to-combination pairs.
 
         Args:
             from_column (pandas.Series): from_column strings
@@ -314,6 +314,6 @@ class AutoStringMapper:
         divisor_frame_to = divisor_frame_to.T.reset_index(drop=True).T
         divisor_frame_to.reset_index(drop=True, inplace=True)
 
-        maxlen_matrix = pd.concat([divisor_frame_from, divisor_frame_to]).groupby(level=0).max().astype("float32")
+        maxlen_matrix = pd.concat([divisor_frame_from, divisor_frame_to]).groupby(level=0).max().astype("float64")
 
         return maxlen_matrix
