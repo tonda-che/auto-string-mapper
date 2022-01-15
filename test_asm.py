@@ -69,7 +69,6 @@ def test_create_levenshtein_array():
     from_column = pd.Series(["pun", "bun", "pun", "bun"])
     to_column = pd.Series(["pant", "pant", "sun", "sun"])
     actual_result = AutoStringMapper.create_levenshtein_array(from_column, to_column, 2, 2, 3, 4)
-    print(actual_result)
     supposed_result = np.array(
         [
             [[0, 1, 2, 3], [1, 1, 2, 3], [2, 2, 1, 2]],
@@ -79,3 +78,59 @@ def test_create_levenshtein_array():
         ]
     )
     assert (actual_result == supposed_result).all()
+
+
+def test_mapping():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping()
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": "Aladin (1992)",
+        "Mulan": "Mulan (1998)",
+        "The Lion King": "Lion King (1994)",
+    }
+    assert actual_result == supposed_result
+
+
+def test_mapping_for_frame():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(data_type="frame")
+    supposed_result = pd.DataFrame(
+        {
+            "from": ["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King"],
+            "to": ["The Beauty and the Beast (1991)", "Aladin (1992)", "Mulan (1998)", "Lion King (1994)"],
+        }
+    )
+    assert_frame_equal(actual_result.sort_index(axis=1), supposed_result.sort_index(axis=1))
+
+
+def test_mapping_for_series():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(data_type="series")
+    supposed_result = pd.Series(
+        {
+            "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+            "Aladdin": "Aladin (1992)",
+            "Mulan": "Mulan (1998)",
+            "The Lion King": "Lion King (1994)",
+        }
+    )
+    assert_series_equal(actual_result.sort_index(), supposed_result.sort_index())
+
+
+def test_relationship_type():
+    # TBD
+    assert True
+
+
+def test_similarity_threshold():
+    # TBD
+    assert True
+
+
+def test_ignore_case():
+    # TBD
+    assert True
