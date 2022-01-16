@@ -2,14 +2,16 @@
 This mapper can take two lists of strings and propose a mapping based on string similarity. For every string in one list of string (the object passed to the parameter "from_column") we look for the most similar string in the other list of strings (the object passed to the parameter "to_column") in order to propose a mapping.
 
 # installation
-TBD
+```
+pip install git+https://github.com/tonda-che/auto-string-mapper
+```
 
 # example
 Lets suppose we have a data set with movie categories like "Action-Thriller", "Romance", "Drama", "Horror", ... and then we have another database which has also other movie categories that look different, for example only with 3 characters "DRA", "ACT", "ROM", "HOR", "THR", ... and we want to map these two together into one consistent database.
 
 ```
-from asm import AutoStringMapper
-AutoStringMapper(
+from asm import asm
+asm.AutoStringMapper(
     from_column=["Action-Thriller", "Romance", "Drama", "Horror"],
     to_column=["DRA", "DRA", "ACT", "ROM", "HOR", "THR"],
 ).get_mapping()
