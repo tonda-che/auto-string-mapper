@@ -109,15 +109,15 @@ class AutoStringMapper:
 
         if relationship_type == "1:1":
 
-            max_row_name = determine_unused_row_name(index=self.similarity_matrix.index)
+            max_row_name = self.determine_unused_row_name(index=self.similarity_matrix.index)
 
             self.similarity_matrix.loc[max_row_name] = self.similarity_matrix.max(axis=0)
 
-            self.similarity_matrix.drop([max_row_name], inplace=True)
-
             self.similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
 
-            duplication_mask = self.similarity_matrix.idxmax(axis=0).duplicated()
+            self.similarity_matrix.drop([max_row_name], inplace=True)
+
+            duplication_mask = self.similarity_matrix.idxmax(axis=0).duplicated(keep="first")
 
         elif relationship_type == "1:n":
 
@@ -127,11 +127,11 @@ class AutoStringMapper:
 
             raise ValueError("Parameter relationship_type must be " "1:1" " or " "1:n" "")
 
-        similarity_threshold_mask = self.similarity_matrix.max(axis=0) >= similarity_threshold
+        similarity_threshold_mask = self.similarity_matrix.max(axis=0) < similarity_threshold
 
         net_mask = similarity_threshold_mask | duplication_mask
 
-        mapping = mapping.where(net_mask, np.nan)
+        mapping = mapping.mask(net_mask, np.nan)
 
         if data_type == "dict":
 

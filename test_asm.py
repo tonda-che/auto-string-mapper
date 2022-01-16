@@ -122,15 +122,56 @@ def test_mapping_for_series():
 
 
 def test_relationship_type():
-    # TBD
-    assert True
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "Aladin"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(relationship_type="1:1")
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": np.nan,
+        "Mulan": "Mulan (1998)",
+        "Aladin": "Aladin (1992)",
+    }
+    for key in supposed_result.keys():
+        assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
 
 
 def test_similarity_threshold():
-    # TBD
-    assert True
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(similarity_threshold=0.4)
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": np.nan,
+        "Mulan": "Mulan (1998)",
+        "The Lion King": np.nan,
+    }
+    for key in supposed_result.keys():
+        assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
 
 
-def test_ignore_case():
-    # TBD
-    assert True
+def test_ignore_case_deactivated():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King", "Matrix (1999)"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)", "MATRIX 1999"])
+    actual_result = AutoStringMapper(from_column, to_column, ignore_case=False).get_mapping()
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": "Aladin (1992)",
+        "Mulan": "Mulan (1998)",
+        "The Lion King": "Lion King (1994)",
+        "Matrix (1999)": "Aladin (1992)",
+    }
+    assert actual_result == supposed_result
+
+
+def test_ignore_case_activated():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "The Lion King", "Matrix (1999)"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)", "MATRIX 1999"])
+    actual_result = AutoStringMapper(from_column, to_column, ignore_case=True).get_mapping()
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": "Aladin (1992)",
+        "Mulan": "Mulan (1998)",
+        "The Lion King": "Lion King (1994)",
+        "Matrix (1999)": "MATRIX 1999",
+    }
+    assert actual_result == supposed_result
