@@ -12,23 +12,22 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = "mypackage"
-DESCRIPTION = "My short description for my project."
-URL = "https://github.com/me/myproject"
-EMAIL = "me@example.com"
+NAME = "asm"
+DESCRIPTION = "Automatic string mapping between two lists of strings."
+URL = "https://github.com/tonda-che/auto-string-mapper"
+EMAIL = "Tonda.Roder@gmx.de"
 AUTHOR = "TondaChe"
 REQUIRES_PYTHON = ">=3.9.1"
 VERSION = "0.1.0"
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    # 'requests', 'maya', 'records',
+    "pandas",
+    "numpy",
 ]
 
 # What packages are optional?
-EXTRAS = {
-    # 'fancy feature': ['django'],
-}
+EXTRAS = {"pytest", "black", "flake8", "pre-commit"}
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
