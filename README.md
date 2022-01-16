@@ -7,14 +7,21 @@ TBD
 # example
 Lets suppose we have a data set with movie categories like "Drama", "Action-Thriller", "Romance", "Horror", ... and then we have another database which has also other movie categories that look different, for example only with 3 characters "DRA", "ACT", "ROM", "HOR", "THR", ... and we want to map these two together into one consistent database.
 
+```
 from asm import AutoStringMapper
 AutoStringMapper(
     from=["Drama", "Action-Thriller", "Romance", "Horror"],
     to=["DRA", "ACT", "ROM", "HOR", "THR"],
 ).get_mapping()
+```
 
 The result would be:
-{"Drama": "DRA", "Action-Thriller": "ACT", "Romance": "ROM", "Horror": "HOR"}
+```
+{"Drama": "DRA",
+ "Action-Thriller": "ACT",
+ "Romance": "ROM",
+ "Horror": "HOR"}
+ ```
 
 Remark: Of course, string similarities never give you factual truth. Like in this example where you should still would need to decide whether and "Action-Thriller" should be mapped to "ACT" (as the mapper proposes) or "THR". Other strings might even be similar but factually completely different.
 
