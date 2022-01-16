@@ -27,7 +27,7 @@ REQUIRED = [
 ]
 
 # What packages are optional?
-EXTRAS = {"pytest", "black", "flake8", "pre-commit"}
+EXTRAS = {"dev": ["pytest", "black", "flake8", "pre-commit"]}
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
