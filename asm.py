@@ -91,6 +91,8 @@ class AutoStringMapper:
                 into the mapping and not as np.nan
             relationship_type (str): determines whether the mapping is a "1:n"
                 or a "1:1" relationship
+            data_type (str): determines whether the returned data type is a
+                dict, a series or a data frame
 
 
         Returns:
@@ -103,6 +105,7 @@ class AutoStringMapper:
 
         """
         if similarity_threshold < 0.0 or similarity_threshold > 1.0:
+
             raise ValueError("Parameter similarity_threshold must be between 0 and 1")
 
         mapping = self.similarity_matrix.idxmax(axis=0)

@@ -175,3 +175,13 @@ def test_ignore_case_activated():
         "Matrix (1999)": "MATRIX 1999",
     }
     assert actual_result == supposed_result
+
+
+def test_1_to_1_with_threshold_overlay_case():
+    from_column = pd.Series(["Matrix (1999)", "MATRIX 1999"])
+    to_column = pd.Series(["MATRIX 1999 XYZZZZ", "MTRX"])
+    actual_result = AutoStringMapper(from_column, to_column, ignore_case=True).get_mapping(
+        relationship_type="1:1", similarity_threshold=0.3
+    )
+    supposed_result = {"Matrix (1999)": "MTRX", "MATRIX 1999": "MATRIX 1999 XYZZZZ"}
+    assert actual_result == supposed_result
