@@ -108,8 +108,6 @@ class AutoStringMapper:
 
             raise ValueError("Parameter similarity_threshold must be between 0 and 1")
 
-        mapping = self.similarity_matrix.idxmax(axis=0)
-
         if relationship_type == "1:1":
 
             max_row_name = self.determine_unused_row_name(index=self.similarity_matrix.index)
@@ -120,21 +118,53 @@ class AutoStringMapper:
 
             self.similarity_matrix.drop([max_row_name], inplace=True)
 
-            duplication_mask = self.similarity_matrix.idxmax(axis=0).duplicated(keep="first")
+            mapping = self.similarity_matrix.idxmax(axis=0)
+
+            duplication_mask = mapping.duplicated(keep="first")
+
+            similarity_threshold_mask = self.similarity_matrix.max(axis=0) < similarity_threshold
+
+            net_mask = duplication_mask | similarity_threshold_mask
+
+            mapping.mask(net_mask, np.nan, inplace=True)
+
+            similarity_matrix = self.similarity_matrix.copy()
+
+            while mapping.count() < len(self.similarity_matrix.columns):
+                for index, column in mapping.iteritems():
+                    if not pd.isnull(column):
+                        similarity_matrix.drop(columns=index, inplace=True)
+                        similarity_matrix.drop(index=column, inplace=True)
+
+                similarity_matrix.loc[max_row_name] = similarity_matrix.max(axis=0)
+
+                similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
+
+                similarity_matrix.drop([max_row_name], inplace=True)
+
+                sub_mapping = similarity_matrix.idxmax(axis=0)
+
+                duplication_mask = similarity_matrix.idxmax(axis=0).duplicated(keep="first")
+
+                similarity_threshold_mask = similarity_matrix.max(axis=0) < similarity_threshold
+
+                net_mask = duplication_mask | similarity_threshold_mask
+
+                sub_mapping.mask(net_mask, np.nan, inplace=True)
+
+                mapping.fillna(sub_mapping, inplace=True)
 
         elif relationship_type == "1:n":
 
-            duplication_mask = False
+            mapping = self.similarity_matrix.idxmax(axis=0)
+
+            similarity_threshold_mask = self.similarity_matrix.max(axis=0) < similarity_threshold
+
+            mapping.mask(similarity_threshold_mask, np.nan, inplace=True)
 
         else:
 
             raise ValueError("Parameter relationship_type must be " "1:1" " or " "1:n" "")
-
-        similarity_threshold_mask = self.similarity_matrix.max(axis=0) < similarity_threshold
-
-        net_mask = similarity_threshold_mask | duplication_mask
-
-        mapping = mapping.mask(net_mask, np.nan)
 
         if data_type == "dict":
 

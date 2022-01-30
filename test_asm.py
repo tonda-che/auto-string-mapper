@@ -3,6 +3,8 @@ from pandas.testing import assert_frame_equal
 from pandas.testing import assert_series_equal
 import pandas as pd
 import numpy as np
+import random
+import string
 
 
 def test_create_maxlen_matrix():
@@ -185,3 +187,30 @@ def test_1_to_1_with_threshold_overlay_case():
     )
     supposed_result = {"Matrix (1999)": "MTRX", "MATRIX 1999": "MATRIX 1999 XYZZZZ"}
     assert actual_result == supposed_result
+
+
+def get_random_string(number_of_characters=20):
+    random_string = "".join(random.choices(string.ascii_uppercase + string.digits, k=number_of_characters))
+    return random_string
+
+
+def get_random_string_array(length=100, number_of_characters=20):
+    arr = []
+    for index in range(length):
+        arr.append(get_random_string(number_of_characters))
+    return arr
+
+
+def test_performance_200_to_100():
+    AutoStringMapper(from_column=get_random_string_array(200), to_column=get_random_string_array(100), ignore_case=True).get_mapping()
+    assert True
+
+
+def test_performance_100_to_200():
+    AutoStringMapper(from_column=get_random_string_array(100), to_column=get_random_string_array(200), ignore_case=True).get_mapping()
+    assert True
+
+
+def test_performance_200_to_200():
+    AutoStringMapper(from_column=get_random_string_array(200), to_column=get_random_string_array(200), ignore_case=True).get_mapping()
+    assert True
