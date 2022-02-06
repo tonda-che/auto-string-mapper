@@ -129,7 +129,7 @@ def test_relationship_type():
     actual_result = AutoStringMapper(from_column, to_column).get_mapping(relationship_type="1:1")
     supposed_result = {
         "The Beauty and the Beast": "The Beauty and the Beast (1991)",
-        "Aladdin": np.nan,
+        "Aladdin": "Lion King (1994)",
         "Mulan": "Mulan (1998)",
         "Aladin": "Aladin (1992)",
     }
@@ -147,6 +147,21 @@ def test_similarity_threshold():
         "Mulan": "Mulan (1998)",
         "The Lion King": np.nan,
     }
+    for key in supposed_result.keys():
+        assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
+
+
+def test_relationship_type_and_threshold():
+    from_column = pd.Series(["The Beauty and the Beast", "Aladdin", "Mulan", "Aladin"])
+    to_column = pd.Series(["Aladin (1992)", "Lion King (1994)", "The Beauty and the Beast (1991)", "Mulan (1998)"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(relationship_type="1:1", similarity_threshold=0.4)
+    supposed_result = {
+        "The Beauty and the Beast": "The Beauty and the Beast (1991)",
+        "Aladdin": np.nan,
+        "Mulan": "Mulan (1998)",
+        "Aladin": "Aladin (1992)",
+    }
+    print(actual_result)
     for key in supposed_result.keys():
         assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
 

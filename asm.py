@@ -76,6 +76,40 @@ class AutoStringMapper:
             row_name += "max"
         return row_name
 
+    @staticmethod
+    def create_mapping(similarity_matrix: pd.DataFrame, max_row_name: str, similarity_threshold: float) -> tuple:
+        """
+        creats a mapping for a similarity matrix using a threshold and an unused row name
+
+        Args:
+            similarity_matrix (pd.DataFrame): similarity matrix to build the
+                                              mapping on
+            max_row_name (str): row name not used as a column
+            similarity_threshold (float): minimum similarity in order to map
+
+        Returns:
+            tuple: tuple of the updated similarity_matrix (pd.DataFrame) and the
+                   created mapping (pd.Series)
+
+        """
+        similarity_matrix.loc[max_row_name] = similarity_matrix.max(axis=0)
+
+        similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
+
+        similarity_matrix.drop([max_row_name], inplace=True)
+
+        mapping = similarity_matrix.idxmax(axis=0)
+
+        duplication_mask = mapping.duplicated(keep="first")
+
+        similarity_threshold_mask = similarity_matrix.max(axis=0) < similarity_threshold
+
+        net_mask = duplication_mask | similarity_threshold_mask
+
+        mapping.mask(net_mask, np.nan, inplace=True)
+
+        return mapping, similarity_matrix
+
     def get_mapping(
         self,
         similarity_threshold: float = 0.0,
@@ -112,45 +146,19 @@ class AutoStringMapper:
 
             max_row_name = self.determine_unused_row_name(index=self.similarity_matrix.index)
 
-            self.similarity_matrix.loc[max_row_name] = self.similarity_matrix.max(axis=0)
-
-            self.similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
-
-            self.similarity_matrix.drop([max_row_name], inplace=True)
-
-            mapping = self.similarity_matrix.idxmax(axis=0)
-
-            duplication_mask = mapping.duplicated(keep="first")
-
-            similarity_threshold_mask = self.similarity_matrix.max(axis=0) < similarity_threshold
-
-            net_mask = duplication_mask | similarity_threshold_mask
-
-            mapping.mask(net_mask, np.nan, inplace=True)
+            mapping, self.similarity_matrix = self.create_mapping(self.similarity_matrix, max_row_name, similarity_threshold)
 
             similarity_matrix = self.similarity_matrix.copy()
+            sub_mapping = mapping.copy()
 
             while mapping.count() < len(self.similarity_matrix.columns):
-                for index, column in mapping.iteritems():
+                for index, column in sub_mapping.iteritems():
                     if not pd.isnull(column):
+
                         similarity_matrix.drop(columns=index, inplace=True)
                         similarity_matrix.drop(index=column, inplace=True)
 
-                similarity_matrix.loc[max_row_name] = similarity_matrix.max(axis=0)
-
-                similarity_matrix.sort_values(by=max_row_name, ascending=False, axis=1, inplace=True)
-
-                similarity_matrix.drop([max_row_name], inplace=True)
-
-                sub_mapping = similarity_matrix.idxmax(axis=0)
-
-                duplication_mask = similarity_matrix.idxmax(axis=0).duplicated(keep="first")
-
-                similarity_threshold_mask = similarity_matrix.max(axis=0) < similarity_threshold
-
-                net_mask = duplication_mask | similarity_threshold_mask
-
-                sub_mapping.mask(net_mask, np.nan, inplace=True)
+                sub_mapping, similarity_matrix = self.create_mapping(similarity_matrix, max_row_name, similarity_threshold)
 
                 mapping.fillna(sub_mapping, inplace=True)
 
