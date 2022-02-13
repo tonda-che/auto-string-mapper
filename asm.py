@@ -110,6 +110,37 @@ class AutoStringMapper:
 
         return mapping, similarity_matrix
 
+    def clean_matrix(self, sub_similarity_matrix, sub_mapping, similarity_threshold=0):
+        """
+        Function clean the similarity matrix of columns and indices that are
+        already in the mapping or that will never be in there as there best
+        similarity is below the threshold
+
+        Args:
+            sub_similarity_matrix (pd.DataFrame): similarity matrix that needs
+                to be cleaned
+            sub_mapping (pd.Series): current version of the mapping with the
+                values that are to be cleaned
+            similarity_threshold (float): threshold which decides how
+                similar two strings need to be in order to be included
+                into the mapping and not as np.nan
+
+
+        Returns:
+            pd.DataFrame: updated similarity_matrix
+
+        """
+        for index, column in sub_mapping.iteritems():
+            if not pd.isnull(column):
+
+                sub_similarity_matrix.drop(columns=index, inplace=True)
+                sub_similarity_matrix.drop(index=column, inplace=True)
+
+        for column in sub_similarity_matrix.index[sub_similarity_matrix.max(axis=0) < similarity_threshold]:
+            sub_similarity_matrix.drop(index=column, inplace=True)
+
+        return sub_similarity_matrix
+
     def get_mapping(
         self,
         similarity_threshold: float = 0.0,
@@ -124,7 +155,7 @@ class AutoStringMapper:
                 similar two strings need to be in order to be included
                 into the mapping and not as np.nan
             relationship_type (str): determines whether the mapping is a "1:n"
-                or a "1:1" relationship
+                / "one_to_many" or a "1:1" / "one_to_one" relationship
             data_type (str): determines whether the returned data type is a
                 dict, a series or a data frame
 
@@ -142,27 +173,26 @@ class AutoStringMapper:
 
             raise ValueError("Parameter similarity_threshold must be between 0 and 1")
 
-        if relationship_type == "1:1":
+        if relationship_type == "1:1" or relationship_type == "one_to_one":
 
             max_row_name = self.determine_unused_row_name(index=self.similarity_matrix.index)
 
             mapping, self.similarity_matrix = self.create_mapping(self.similarity_matrix, max_row_name, similarity_threshold)
 
-            similarity_matrix = self.similarity_matrix.copy()
+            sub_similarity_matrix = self.similarity_matrix.copy()
             sub_mapping = mapping.copy()
 
-            while mapping.count() < len(self.similarity_matrix.columns):
-                for index, column in sub_mapping.iteritems():
-                    if not pd.isnull(column):
+            sub_similarity_matrix = self.clean_matrix(sub_similarity_matrix, sub_mapping, similarity_threshold)
 
-                        similarity_matrix.drop(columns=index, inplace=True)
-                        similarity_matrix.drop(index=column, inplace=True)
+            while sub_similarity_matrix.shape[0] != 0 and sub_similarity_matrix.shape[1] != 0:
 
-                sub_mapping, similarity_matrix = self.create_mapping(similarity_matrix, max_row_name, similarity_threshold)
+                sub_mapping, sub_similarity_matrix = self.create_mapping(sub_similarity_matrix, max_row_name, similarity_threshold)
 
                 mapping.fillna(sub_mapping, inplace=True)
 
-        elif relationship_type == "1:n":
+                sub_similarity_matrix = self.clean_matrix(sub_similarity_matrix, sub_mapping)
+
+        elif relationship_type == "1:n" or relationship_type == "one_to_many":
 
             mapping = self.similarity_matrix.idxmax(axis=0)
 

@@ -161,7 +161,20 @@ def test_relationship_type_and_threshold():
         "Mulan": "Mulan (1998)",
         "Aladin": "Aladin (1992)",
     }
-    print(actual_result)
+    for key in supposed_result.keys():
+        assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
+
+
+def test_relationship_type_and_threshold_2():
+    from_column = pd.Series(["Matrix", "Matrixa", "Matrixab", "Matrixabc"])
+    to_column = pd.Series(["Matrix", "Matrix1", "Matrix12", "Matrix123"])
+    actual_result = AutoStringMapper(from_column, to_column).get_mapping(relationship_type="1:1", similarity_threshold=0.1)
+    supposed_result = {
+        "Matrix": "Matrix",
+        "Matrixa": "Matrix1",
+        "Matrixab": "Matrix12",
+        "Matrixabc": "Matrix123",
+    }
     for key in supposed_result.keys():
         assert actual_result[key] == supposed_result[key] or (pd.isnull(actual_result[key]) and pd.isnull(supposed_result[key]))
 
